@@ -475,6 +475,7 @@ $ knife solo init chef-repo3
 $ cd chef-ropo3
 $ knife cookbook github install treasure-data/chef-td-agent
 $ knife cookbook github install opscode-cookbooks/apt
+$ knife cookbook github install opscode-cookbooks/yum
 ```
 定義ファイル作成
 ```bash
@@ -482,11 +483,213 @@ $ knife solo prepare melody
 ```
 _nodes/melody.json_
 ```javascript
-{"run_list":["td-agent"]}
-
+{"run_list":["td-agent","apt","yum"]}
 ```
 レシピ適用
 ```bash
 $ knife solo cook melody
+Running Chef on melody...
+Checking Chef version...
+Uploading the kitchen...
+Generating solo config...
+Running Chef...
+[2014-05-09T06:10:44+00:00] WARN:
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+SSL validation of HTTPS requests is disabled. HTTPS connections are still
+encrypted, but chef is not able to detect forged replies or man in the middle
+attacks.
+
+To fix this issue add an entry like this to your configuration file:
+
+
+  # Verify all HTTPS connections (recommended)
+  ssl_verify_mode :verify_peer
+
+  # OR, Verify only connections to chef-server
+  verify_api_cert true
+
+
+To check your SSL configuration, or troubleshoot errors, you can use the
+`knife ssl check` command like so:
+
+
+  knife ssl check -c /home/vagrant/chef-solo/solo.rb
+
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+Starting Chef Client, version 11.12.4
+Compiling Cookbooks...
+Converging 16 resources
+Recipe: td-agent::default
+  * group[td-agent] action create
+    - create group[td-agent]
+
+  * user[td-agent] action create
+    - create user user[td-agent]
+
+  * user[td-agent] action manage (up to date)
+  * directory[/etc/td-agent/] action create
+    - create new directory /etc/td-agent/
+    - change mode from '' to '0755'
+    - change owner from '' to 'td-agent'
+    - change group from '' to 'td-agent'
+
+  * apt_repository[treasure-data] action addRecipe: <Dynamically Defined Resource>
+  * file[/var/lib/apt/periodic/update-success-stamp] action nothing (skipped due to action :nothing)
+  * execute[apt-cache gencaches] action nothing (skipped due to action :nothing)
+  * execute[apt-get update] action nothing (skipped due to action :nothing)
+  * file[/etc/apt/sources.list.d/treasure-data.list] action create
+    - create new file /etc/apt/sources.list.d/treasure-data.list
+    - update content in file /etc/apt/sources.list.d/treasure-data.list from none to 481855
+        --- /etc/apt/sources.list.d/treasure-data.list  2014-05-09 06:10:47.402088403 +0000
+        +++ /tmp/.treasure-data.list20140509-12317-1jdnyl       2014-05-09 06:10:47.406088402 +0000
+        @@ -1 +1,2 @@
+        +deb     http://packages.treasure-data.com/precise/ precise contrib
+    - change mode from '' to '0644'
+    - change owner from '' to 'root'
+    - change group from '' to 'root'
+
+  * file[/var/lib/apt/periodic/update-success-stamp] action delete (up to date)
+  * execute[apt-get update] action run
+    - execute apt-get update -o Dir::Etc::sourcelist='sources.list.d/treasure-data.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0'
+
+  * execute[apt-cache gencaches] action run
+    - execute apt-cache gencaches
+
+
+
+Recipe: td-agent::default
+  * template[/etc/td-agent/td-agent.conf] action create
+    - create new file /etc/td-agent/td-agent.conf
+    - update content in file /etc/td-agent/td-agent.conf from none to 9e0e68
+        --- /etc/td-agent/td-agent.conf 2014-05-09 06:10:52.326088249 +0000
+        +++ /tmp/chef-rendered-template20140509-12317-114rr9    2014-05-09 06:10:52.326088249 +0000
+        @@ -1 +1,56 @@
+        +####
+        +## Output descriptions:
+        +##
+        +
+        +# Treasure Data (http://www.treasure-data.com/) provides cloud based data
+        +# analytics platform, which easily stores and processes data from td-agent.
+        +# FREE plan is also provided.
+        +# @see http://docs.fluentd.org/articles/http-to-td
+        +#
+        +# This section matches events whose tag is td.DATABASE.TABLE
+        +<match td.*.*>
+        +  type tdlog
+        +  apikey
+        +
+        +  auto_create_table
+        +  buffer_type file
+        +  buffer_path /var/log/td-agent/buffer/td
+        +</match>
+        +
+        +## match tag=debug.** and dump to console
+        +<match debug.**>
+        +  type stdout
+        +</match>
+        +
+        +####
+        +## Source descriptions:
+        +##
+        +
+        +## built-in TCP input
+        +## @see http://docs.fluentd.org/articles/in_forward
+        +<source>
+        +  type forward
+        +  port 24224
+        +</source>
+        +
+        +## built-in UNIX socket input
+        +#<source>
+        +#  type unix
+        +#</source>
+        +
+        +# HTTP input
+        +# POST http://localhost:8888/<tag>?json=<json>
+        +# POST http://localhost:8888/td.myapp.login?json={"user"%3A"me"}
+        +# @see http://docs.fluentd.org/articles/in_http
+        +<source>
+        +  type http
+        +  port 8888
+        +</source>
+        +
+        +## live debugging agent
+        +<source>
+        +  type debug_agent
+        +  bind 127.0.0.1
+        +  port 24230
+        +</source>
+    - change mode from '' to '0644'
+
+  * package[td-agent] action upgrade
+    - upgrade package td-agent from uninstalled to 1.1.19-1
+
+  * service[td-agent] action enable (up to date)
+  * service[td-agent] action start (up to date)
+Recipe: apt::default
+  * execute[apt-get-update] action run
+    - execute apt-get update
+
+  * execute[apt-get update] action nothing (skipped due to action :nothing)
+  * execute[apt-get autoremove] action nothing (skipped due to action :nothing)
+  * execute[apt-get autoclean] action nothing (skipped due to action :nothing)
+  * package[update-notifier-common] action install
+    - install version 0.119ubuntu8.6 of package update-notifier-common
+
+  * execute[apt-get-update] action run
+    - execute apt-get update
+
+  * execute[apt-get-update-periodic] action run (skipped due to only_if)
+  * directory[/var/cache/local] action create
+    - create new directory /var/cache/local
+    - change mode from '' to '0755'
+    - change owner from '' to 'root'
+    - change group from '' to 'root'
+
+  * directory[/var/cache/local/preseeding] action create
+    - create new directory /var/cache/local/preseeding
+    - change mode from '' to '0755'
+    - change owner from '' to 'root'
+    - change group from '' to 'root'
+
+Recipe: yum::default
+  * yum_globalconfig[/etc/yum.conf] action createRecipe: <Dynamically Defined Resource>
+  * template[/etc/yum.conf] action create
+    - create new file /etc/yum.conf
+    - update content in file /etc/yum.conf from none to 185984
+        --- /etc/yum.conf       2014-05-09 06:12:01.243452995 +0000
+        +++ /tmp/chef-rendered-template20140509-12317-17u9hsw   2014-05-09 06:12:01.251456156 +0000
+        @@ -1 +1,15 @@
+        +# This file was generated by Chef
+        +# Do NOT modify this file by hand.
+        +
+        +[main]
+        +cachedir=/var/cache/yum/$basearch/$releasever
+        +debuglevel=2
+        +distroverpkg=ubuntu-release
+        +exactarch=1
+        +gpgcheck=1
+        +installonly_limit=3
+        +keepcache=0
+        +logfile=/var/log/yum.log
+        +obsoletes=1
+        +plugins=1
+    - change mode from '' to '0644'
+
+
+
+Recipe: td-agent::default
+  * service[td-agent] action restart
+    - restart service service[td-agent]
+
+
+Running handlers:
+Running handlers complete
+
+Chef Client finished, 17/21 resources updated in 78.627232079 seconds
 ```
 # 参照
++ [CHEF](http://www.getchef.com/)
++ [About Resources and Providers](http://docs.opscode.com/resource.html)
