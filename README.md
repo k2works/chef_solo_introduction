@@ -459,7 +459,12 @@ Running handlers complete
 
 Chef Client finished, 0/4 resources updated in 2.616735291 seconds
 ```
-初回実行はエラーが出るが２回めからは出なくなる。
+初回実行はエラーが出るが２回めからは出なくなる。  
+実行の確認ができたら。
+```bash
+$ git add site-cookbooks/nginx
+$ git commit -m 'Add nginx recipe'
+```
 
 
 # 参照
