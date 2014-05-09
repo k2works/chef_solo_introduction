@@ -474,13 +474,7 @@ $ gem install knife-github-cookbooks
 $ knife solo init chef-repo3
 $ cd chef-ropo3
 $ knife cookbook github install treasure-data/chef-td-agent
-Installing td-agent from git://github.com/treasure-data/chef-td-agent.git to /Users/k2works/projects/github/chef_solo_introduction/chef-repo3/cookbooks
-Checking out the master branch.
-Creating pristine copy branch chef-vendor-td-agent
-Removing pre-existing version.
-Found master amoung heads.
-No changes made to td-agent
-Checking out the master branch.
+$ knife cookbook github install opscode-cookbooks/apt
 ```
 定義ファイル作成
 ```bash
