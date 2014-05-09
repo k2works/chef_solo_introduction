@@ -223,7 +223,7 @@ end
 ```
 _cookbooks/nginx/templates/default/nginx.conf.erb_にテンプレートを配置する。
 ```
-user nginx;
+user www-data;
 worker_processes 1;
 error_log /var/log/nginx/error.log;
 pid /var/run/nginx.pid;
@@ -390,7 +390,7 @@ _nodes/melody.json_
 ```
 _site-cookbooks/nginx/templates/default/nginx.conf.erb_
 ```ruby
-user nginx;
+user www-data;
 worker_processes 1;
 error_log /var/log/nginx/error.log;
 pid /var/run/nginx.pid;
@@ -421,7 +421,7 @@ Checking Chef version...
 Uploading the kitchen...
 Generating solo config...
 Running Chef...
-[2014-05-09T05:14:01+00:00] WARN:
+[2014-05-09T07:09:45+00:00] WARN:
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 SSL validation of HTTPS requests is disabled. HTTPS connections are still
 encrypted, but chef is not able to detect forged replies or man in the middle
@@ -450,17 +450,136 @@ Starting Chef Client, version 11.12.4
 Compiling Cookbooks...
 Converging 3 resources
 Recipe: nginx::default
-  * package[nginx] action install (up to date)
+  * package[nginx] action install
+    - install version 1.1.19-1ubuntu0.6 of package nginx
+
   * service[nginx] action enable (up to date)
-  * service[nginx] action start (up to date)
-  * template[nginx.conf] action create (up to date)
+  * service[nginx] action start
+    - start service service[nginx]
+
+  * template[nginx.conf] action create
+    - update content in file /etc/nginx/nginx.conf from 38154b to 034db2
+        --- /etc/nginx/nginx.conf       2012-03-29 02:50:24.000000000 +0000
+        +++ /tmp/chef-rendered-template20140509-5228-1cjnwyt    2014-05-09 07:09:52.363757261 +0000
+        @@ -1,96 +1,23 @@
+         user www-data;
+        -worker_processes 4;
+        +worker_processes 1;
+        +error_log /var/log/nginx/error.log;
+         pid /var/run/nginx.pid;
+
+         events {
+        -       worker_connections 768;
+        -       # multi_accept on;
+        +  worker_connections 1024;
+         }
+
+         http {
+        +  include /etc/nginx/mime.types;
+        +  default_type application/octet-stream;
+
+        -       ##
+        -       # Basic Settings
+        -       ##
+        -
+        -       sendfile on;
+        -       tcp_nopush on;
+        -       tcp_nodelay on;
+        -       keepalive_timeout 65;
+        -       types_hash_max_size 2048;
+        -       # server_tokens off;
+        -
+        -       # server_names_hash_bucket_size 64;
+        -       # server_name_in_redirect off;
+        -
+        -       include /etc/nginx/mime.types;
+        -       default_type application/octet-stream;
+        -
+        -       ##
+        -       # Logging Settings
+        -       ##
+        -
+        -       access_log /var/log/nginx/access.log;
+        -       error_log /var/log/nginx/error.log;
+        -
+        -       ##
+        -       # Gzip Settings
+        -       ##
+        -
+        -       gzip on;
+        -       gzip_disable "msie6";
+        -
+        -       # gzip_vary on;
+        -       # gzip_proxied any;
+        -       # gzip_comp_level 6;
+        -       # gzip_buffers 16 8k;
+        -       # gzip_http_version 1.1;
+        -       # gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+        -
+        -       ##
+        -       # nginx-naxsi config
+        -       ##
+        -       # Uncomment it if you installed nginx-naxsi
+        -       ##
+        -
+        -       #include /etc/nginx/naxsi_core.rules;
+        -
+        -       ##
+        -       # nginx-passenger config
+        -       ##
+        -       # Uncomment it if you installed nginx-passenger
+        -       ##
+        -
+        -       #passenger_root /usr;
+        -       #passenger_ruby /usr/bin/ruby;
+        -
+        -       ##
+        -       # Virtual Host Configs
+        -       ##
+        -
+        -       include /etc/nginx/conf.d/*.conf;
+        -       include /etc/nginx/sites-enabled/*;
+        +  server {
+        +    listen 80;
+        +    server_name localhost;
+        +    location / {
+        +      root /usr/share/nginx/html;
+        +      index index.html index.htm;
+        +    }
+        +  }
+         }
+        -
+        -
+        -#mail {
+        -#      # See sample authentication script at:
+        -#      # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
+        -#
+        -#      # auth_http localhost/auth.php;
+        -#      # pop3_capabilities "TOP" "USER";
+        -#      # imap_capabilities "IMAP4rev1" "UIDPLUS";
+        -#
+        -#      server {
+        -#              listen     localhost:110;
+        -#              protocol   pop3;
+        -#              proxy      on;
+        -#      }
+        -#
+        -#      server {
+        -#              listen     localhost:143;
+        -#              protocol   imap;
+        -#              proxy      on;
+        -#      }
+        -#}
+
+  * service[nginx] action reload
+    - reload service service[nginx]
+
 
 Running handlers:
 Running handlers complete
 
-Chef Client finished, 0/4 resources updated in 2.616735291 seconds
+Chef Client finished, 4/5 resources updated in 7.225893057 seconds
 ```
-初回実行はエラーが出るが２回めからは出なくなる。  
 実行の確認ができたら。
 ```bash
 $ git add site-cookbooks/nginx
