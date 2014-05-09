@@ -16,6 +16,7 @@
 + [nginxをChef Soloで立ち上げる](#3)
 + [リモートからchef-soloを実行する](#4)
 + [レシピを使って実行する流れをおさらい](#5)
++ [td-agentのレシピを読む](#6)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -466,5 +467,9 @@ $ git add site-cookbooks/nginx
 $ git commit -m 'Add nginx recipe'
 ```
 
-
+## <a name="6">td-agentのレシピを読む</a>
+### インストール
+```bash
+$ gem install knife-github-cookbooks
+```
 # 参照
