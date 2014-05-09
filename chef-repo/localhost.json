@@ -1,0 +1,9 @@
+// localhost.json
+{
+  "nginx": {
+    "port" : 80
+  },
+  "run_list" : [
+    "nginx"
+  ]
+}
