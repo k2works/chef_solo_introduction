@@ -812,3 +812,4 @@ Chef Client finished, 17/21 resources updated in 78.627232079 seconds
 # 参照
 + [CHEF](http://www.getchef.com/)
 + [About Resources and Providers](http://docs.opscode.com/resource.html)
++ [Chef Community Cookbooks](https://github.com/opscode-cookbooks)
