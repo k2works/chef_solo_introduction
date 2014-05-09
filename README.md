@@ -4,14 +4,17 @@
 # 前提
 | ソフトウェア   | バージョン   | 備考        |
 |:---------------|:-------------|:------------|
-| OS X           |10.8.5        |             |
+| OS X           |10.9.2        |             |
 | vagrant        |1.6.0        |             |
 | chef           |10.14.2        |             |
+| ruby           |2.1.1        |             |
+| rvm            |1.24.0        |             |
 
 # 構成
 + [セットアップ](#1)
 + [Hello Chef](#2)
 + [nginxをChef Soloで立ち上げる](#3)
++ [リモートからchef-soloを実行する](#4)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -273,4 +276,37 @@ $ sudo chef-solo -c solo.rb -j ./localhost.json
 [2014-05-09T02:25:27+00:00] INFO: Running report handlers
 [2014-05-09T02:25:27+00:00] INFO: Report handlers complete
 ```
+
+## <a name="4">リモートからchef-soloを実行する</a>
+
+### knife-soloの導入
+```bash
+$ gem install knife-solo
+```
+
+#### knife-soloの基本操作
+
+```bash
+# <host>にchef-soloをインストールする
+$ knife solo prepare <host>
+$ knife solo prepare <user>@<host>
+
+# レシピ転送&リモート操作
+$ knife solo cook <host>
+
+# run_listを個別に指定
+$ knife solo cook <host> -o hello::default,nginx::default
+
+# <host>に転送したレシピ郡を削除して掃除する
+$ knife solo clean <host>
+
+# 新規Chefレポジトリを作る
+$ knife solo init chef-repo
+```
+
+#### 複数ホストへのknife soloの実行
+```bash
+$ echo user@node1 user@node2 user@node3 | xargs -n knife solo cook
+```
+
 # 参照
