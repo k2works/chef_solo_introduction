@@ -11,6 +11,7 @@
 # 構成
 + [セットアップ](#1)
 + [Hello Chef](#2)
++ [nginxをChef Soloで立ち上げる](#3)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -182,5 +183,94 @@ $ sudo chef-solo -c solo.rb -j ./localhost.json
 [2014-05-07T09:56:56+00:00] INFO: Report handlers complete
 ```
 
+## <a name="3">nginxをChef Soloで立ち上げる</a>
+### レシピ
+```bash
+$ vagrant up
+$ ssh melody
+$ cd /vagrant/chef-repo/
+$ knife cookbook create nginx -o cookbooks
+WARNING: No knife configuration file found
+** Creating cookbook nginx
+** Creating README for cookbook: nginx
+** Creating CHANGELOG for cookbook: nginx
+** Creating metadata for cookbook: nginx
+```
+_cookbooks/nginx/recipes/default.rb_にレシピを書く
+```ruby
+package "nginx" do
+  action :install
+end
 
+service "nginx" do
+  supports :status => true, :restart => true, :reload => true
+  action [ :enable, :start ]
+end
+
+template "nginx.conf" do
+  path "/etc/nginx/nginx.conf"
+  source "nginx.conf.erb"
+  owner "root"
+  group "root"
+  mode 0644
+  notifies :reload, 'service[nginx]'
+end
+```
+_cookbooks/nginx/templates/default/nginx.conf.erb_にテンプレートを配置する。
+```
+user nginx;
+worker_processes 1;
+error_log /var/log/nginx/error.log;
+pid /var/run/nginx.pid;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  server {
+    listen <%= node['nginx']['port'] %>;
+    server_name localhost;
+    location / {
+      root /usr/share/nginx/html;
+      index index.html index.htm;
+    }
+  }
+}
+```
+_localhost.json_を編集
+```javascript
+{
+  "nginx": {
+    "port" : 80
+  },
+  "run_list" : [
+    "nginx"
+  ]
+}
+```
+
+### chef-solo実行
+実行後に_http://192.168.50.12_にアクセスしてnginxが起動していることを確認する。
+
+```bash
+$ sudo chef-solo -c solo.rb -j ./localhost.json
+[2014-05-09T02:25:26+00:00] INFO: *** Chef 10.14.2 ***
+[2014-05-09T02:25:27+00:00] INFO: Setting the run_list to ["nginx"] from JSON
+[2014-05-09T02:25:27+00:00] INFO: Run List is [recipe[nginx]]
+[2014-05-09T02:25:27+00:00] INFO: Run List expands to [nginx]
+[2014-05-09T02:25:27+00:00] INFO: Starting Chef Run for precise32
+[2014-05-09T02:25:27+00:00] INFO: Running start handlers
+[2014-05-09T02:25:27+00:00] INFO: Start handlers complete.
+[2014-05-09T02:25:27+00:00] INFO: Processing package[nginx] action install (nginx::default line 9)
+[2014-05-09T02:25:27+00:00] INFO: Processing service[nginx] action enable (nginx::default line 13)
+[2014-05-09T02:25:27+00:00] INFO: Processing service[nginx] action start (nginx::default line 13)
+[2014-05-09T02:25:27+00:00] INFO: Processing template[nginx.conf] action create (nginx::default line 18)
+[2014-05-09T02:25:27+00:00] INFO: Chef Run complete in 0.5936 seconds
+[2014-05-09T02:25:27+00:00] INFO: Running report handlers
+[2014-05-09T02:25:27+00:00] INFO: Report handlers complete
+```
 # 参照
