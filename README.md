@@ -1,6 +1,7 @@
 入門CHEF SOLO
 ======================
 # 目的
+[入門Chef Solo - Infrastructure as Code](http://tatsu-zine.com/books/chef-solo)をベースにVagrant+chef-soloの使い方を取得する。
 # 前提
 | ソフトウェア   | バージョン   | 備考        |
 |:---------------|:-------------|:------------|
@@ -810,6 +811,7 @@ Running handlers complete
 Chef Client finished, 17/21 resources updated in 78.627232079 seconds
 ```
 # 参照
++ [入門Chef Solo - Infrastructure as Code](http://tatsu-zine.com/books/chef-solo)
 + [CHEF](http://www.getchef.com/)
 + [About Resources and Providers](http://docs.opscode.com/resource.html)
 + [Chef Community Cookbooks](https://github.com/opscode-cookbooks)
