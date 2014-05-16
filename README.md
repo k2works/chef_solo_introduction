@@ -19,6 +19,7 @@
 + [レシピを使って実行する流れをおさらい](#5)
 + [td-agentのレシピを読む](#6)
 + [Vagrantからプロビジョニングできるようにする](#7)
++ [Vagrant+Chef Solo+AWS](#8)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -862,11 +863,174 @@ config.vm.provision "chef_solo" do |chef|
     }
 end
 ```
-### 再実行
+#### 再実行
 ```bash
 $ vagrant reload
 $ vagrant provision
 ```
+
+## <a name="8">Vagrant+Chef Solo+AWS</a>
+[vagrant入門参照](https://github.com/k2works/vagrant_introduction#4)
+Ubuntoに設定をあわせる  
+_Vagrantfile_
+```ruby
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.omnibus.chef_version = :latest
+
+  #--- 以下を指定 --
+  box_name = "dummy"
+  box_url = "https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box"
+  ssh_username = "ubuntu"
+  security_groups = ["web"]
+  region = "ap-northeast-1"
+  availability_zone = "ap-northeast-1a"
+  ami = "ami-bddaa2bc"
+  instance_type = "m1.medium"
+  #--- ここまで --
+
+  config.vm.box = box_name
+  config.vm.box_url = box_url
+
+  config.vm.provider :aws do |aws, override|
+    aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+    aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+    aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
+    override.ssh.username = ssh_username
+    override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
+
+    #---- EC2-Classic固有の設定 ----#
+    # リージョンを設定
+    aws.region = region
+    # AZを設定
+    aws.availability_zone = availability_zone
+    # セキュリティグループを設定
+    aws.security_groups = security_groups
+    #---- EC2-Classic固有の設定ここまで ----#
+
+    # User-data
+    aws.user_data = "#!/bin/sh\nsed -i 's/^.*requiretty/#Defaults requiretty/' /etc/sudoers\n"
+    # タグを指定(任意)
+    aws.tags = aws.tags = { "Name" => "test-classic-default-minimal", "env" => "dev"}
+    # AMIを指定。起動したいリージョンにあるAMI
+    aws.ami = ami
+    # インスタンスタイプを設定
+    aws.instance_type = instance_type
+  end
+
+  config.vm.provision "chef_solo" do |chef|
+    chef.cookbooks_path = ["./chef-repo/cookbooks"]
+    chef.add_recipe "hello"
+    chef.add_recipe "nginx"
+
+    chef.json = {
+      nginx: {
+        port: "80"
+        }
+      }
+  end
+end
+```
+### 実行
+```bash
+$ vagrant destroy
+$ vagrant up --provider=aws
+Bringing machine 'default' up with 'aws' provider...
+[fog][WARNING] Unable to load the 'unf' gem. Your AWS strings may not be properly encoded.
+==> default: HandleBoxUrl middleware is deprecated. Use HandleBox instead.
+==> default: This is a bug with the provider. Please contact the creator
+==> default: of the provider you use to fix this.
+==> default: Warning! The AWS provider doesn't support any of the Vagrant
+==> default: high-level network configurations (`config.vm.network`). They
+==> default: will be silently ignored.
+==> default: Launching an instance with the following settings...
+==> default:  -- Type: m1.medium
+==> default:  -- AMI: ami-bddaa2bc
+==> default:  -- Region: ap-northeast-1
+==> default:  -- Availability Zone: ap-northeast-1a
+==> default:  -- Keypair: k2works
+==> default:  -- User Data: yes
+==> default:  -- Security Groups: ["web"]
+==> default:  -- User Data: #!/bin/sh
+==> default: sed -i 's/^.*requiretty/#Defaults requiretty/' /etc/sudoers
+==> default:  -- Block Device Mapping: []
+==> default:  -- Terminate On Shutdown: false
+==> default:  -- Monitoring: false
+==> default:  -- EBS optimized: false
+==> default: Waiting for instance to become "ready"...
+==> default: Waiting for SSH to become available...
+==> default: Machine is booted and ready for use!
+==> default: Rsyncing folder: /Users/k2works/projects/github/chef_solo_introduction/ => /vagrant
+==> default: Rsyncing folder: /Users/k2works/projects/github/chef_solo_introduction/chef-repo/cookbooks/ => /tmp/vagrant-chef-3/chef-solo-1/cookbooks
+==> default: Installing Chef 11.12.4 Omnibus package...
+==> default: Downloading Chef 11.12.4 for ubuntu...
+==> default: downloading https://www.getchef.com/chef/metadata?v=11.12.4&prerelease=false&nightlies=false&p=ubuntu&pv=14.04&m=x86_64
+==> default:   to file /tmp/install.sh.1417/metadata.txt
+==> default: trying wget...
+==> default: url        https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/13.04/x86_64/chef_11.12.4-1_amd64.deb
+==> default: md5        1a1318c64d42278501a90a698b50ef3e
+==> default: sha256     1ab6016c5ba33af4da372e3b65e7e036895639ebc3d2a9672f50b367cf490577
+==> default: downloaded metadata file looks valid...
+==> default: downloading https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/13.04/x86_64/chef_11.12.4-1_amd64.deb
+==> default:   to file /tmp/install.sh.1417/chef_11.12.4-1_amd64.deb
+==> default: trying wget...
+==> default: Comparing checksum with sha256sum...
+==> default: Installing Chef 11.12.4
+==> default: installing with dpkg...
+==> default: Selecting previously unselected package chef.
+==> default: (Reading database ... 51050 files and directories currently installed.)
+==> default: Preparing to unpack .../chef_11.12.4-1_amd64.deb ...
+==> default: Unpacking chef (11.12.4-1) ...
+==> default: Setting up chef (11.12.4-1) ...
+==> default: Thank you for installing Chef!
+==> default: Running provisioner: chef_solo...
+Generating chef JSON and uploading...
+==> default: Running chef-solo...
+==> default: stdin: is not a tty
+==> default: [2014-05-16T06:42:40+00:00] INFO: Forking chef instance to converge...
+==> default: [2014-05-16T06:42:40+00:00] WARN:
+==> default: * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+==> default: SSL validation of HTTPS requests is disabled. HTTPS connections are still
+==> default: encrypted, but chef is not able to detect forged replies or man in the middle
+==> default: attacks.
+==> default:
+==> default: To fix this issue add an entry like this to your configuration file:
+==> default:
+==> default:
+==> default:   # Verify all HTTPS connections (recommended)
+==> default:   ssl_verify_mode :verify_peer
+==> default:
+==> default:   # OR, Verify only connections to chef-server
+==> default:   verify_api_cert true
+==> default:
+==> default:
+==> default: To check your SSL configuration, or troubleshoot errors, you can use the
+==> default: `knife ssl check` command like so:
+==> default:
+==> default:
+==> default:   knife ssl check -c /tmp/vagrant-chef-3/solo.rb
+==> default:
+==> default:
+==> default: * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+==> default: [2014-05-16T06:42:40+00:00] INFO: *** Chef 11.12.4 ***
+==> default: [2014-05-16T06:42:40+00:00] INFO: Chef-client pid: 1594
+==> default: [2014-05-16T06:42:44+00:00] INFO: Setting the run_list to ["recipe[hello]", "recipe[nginx]"] from CLI options
+==> default: [2014-05-16T06:42:44+00:00] INFO: Run List is [recipe[hello], recipe[nginx]]
+==> default: [2014-05-16T06:42:44+00:00] INFO: Run List expands to [hello, nginx]
+==> default: [2014-05-16T06:42:44+00:00] INFO: Starting Chef Run for ip-10-133-171-136.ap-northeast-1.compute.internal
+==> default: [2014-05-16T06:42:44+00:00] INFO: Running start handlers
+==> default: [2014-05-16T06:42:44+00:00] INFO: Start handlers complete.
+==> default: [2014-05-16T06:42:44+00:00] INFO: Hello, Chef!
+==> default: [2014-05-16T06:43:36+00:00] INFO: template[nginx.conf] backed up to /var/chef/backup/etc/nginx/nginx.conf.chef-20140516064336.727870
+==> default: [2014-05-16T06:43:36+00:00] INFO: template[nginx.conf] updated file contents /etc/nginx/nginx.conf
+==> default: [2014-05-16T06:43:36+00:00] INFO: template[nginx.conf] sending reload action to service[nginx] (delayed)
+==> default: [2014-05-16T06:43:36+00:00] INFO: service[nginx] reloaded
+==> default: [2014-05-16T06:43:36+00:00] INFO: Chef Run complete in 52.432361912 seconds
+==> default: [2014-05-16T06:43:36+00:00] INFO: Running report handlers
+==> default: [2014-05-16T06:43:36+00:00] INFO: Report handlers complete
+```
+実行完了後AWSインスタンスのPublic DNSアドレスをブラウザで確認する。
 
 # 参照
 + [入門Chef Solo - Infrastructure as Code](http://tatsu-zine.com/books/chef-solo)
