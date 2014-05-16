@@ -18,6 +18,7 @@
 + [リモートからchef-soloを実行する](#4)
 + [レシピを使って実行する流れをおさらい](#5)
 + [td-agentのレシピを読む](#6)
++ [Vagrantからプロビジョニングできるようにする](#7)
 
 # 詳細
 ## <a name="1">セットアップ</a>
@@ -810,8 +811,66 @@ Running handlers complete
 
 Chef Client finished, 17/21 resources updated in 78.627232079 seconds
 ```
+
+## <a name="7">Vagrantからプロビジョニングできるようにする</a>
+### Vagrantfileに追加
+```ruby
+config.vm.provision "chef_solo" do |chef|
+  chef.cookbooks_path = "./chef-repo/cookbooks"
+  chef.add_recipe "hello"
+end
+```
+### 実行
+```bash
+$ vagrant provision
+==> default: Chef 11.12.4 Omnibus package is already installed.
+==> default: Running provisioner: shell...
+・・・
+==> default: Running provisioner: chef_solo...
+Generating chef JSON and uploading...
+==> default: Running chef-solo...
+・・・
+==> default: [2014-05-16T02:46:57+00:00] INFO: *** Chef 11.12.4 ***
+==> default: [2014-05-16T02:46:57+00:00] INFO: Chef-client pid: 13920
+==> default: [2014-05-16T02:46:58+00:00] INFO: Setting the run_list to ["recipe[hello]"] from CLI options
+==> default: [2014-05-16T02:46:58+00:00] INFO: Run List is [recipe[hello]]
+==> default: [2014-05-16T02:46:58+00:00] INFO: Run List expands to [hello]
+==> default: [2014-05-16T02:46:59+00:00] INFO: Starting Chef Run for precise32
+==> default: [2014-05-16T02:46:59+00:00] INFO: Running start handlers
+==> default: [2014-05-16T02:46:59+00:00] INFO: Start handlers complete.
+==> default: [2014-05-16T02:46:59+00:00] INFO: Hello, Chef!
+==> default: [2014-05-16T02:47:12+00:00] INFO: Chef Run complete in 13.984427685 seconds
+==> default: [2014-05-16T02:47:12+00:00] INFO: Running report handlers
+==> default: [2014-05-16T02:47:12+00:00] INFO: Report handlers complete
+```
+
+### 複数のクックブックを実行できるようする
+_Vagrantfile_
+```ruby
+config.vm.provision "chef_solo" do |chef|
+  chef.cookbooks_path = ["./chef-repo/cookbooks","./chef-repo2/site-cookbooks","./chef-repo3/cookbooks"]
+  chef.add_recipe "hello"
+  chef.add_recipe "nginx"
+  chef.add_recipe "td-agent"
+  chef.add_recipe "apt"
+  chef.add_recipe "yum"
+
+  chef.json = {
+    nginx: {
+      port: "80"
+      }
+    }
+end
+```
+### 再実行
+```bash
+$ vagrant reload
+$ vagrant provision
+```
+
 # 参照
 + [入門Chef Solo - Infrastructure as Code](http://tatsu-zine.com/books/chef-solo)
 + [CHEF](http://www.getchef.com/)
 + [About Resources and Providers](http://docs.opscode.com/resource.html)
 + [Chef Community Cookbooks](https://github.com/opscode-cookbooks)
++ [CHEF SOLO PROVISIONER](http://docs.vagrantup.com/v2/provisioning/chef_solo.html)
